@@ -155,17 +155,5 @@ public class AuthController {
         }
     }
 
-    // ⚠️ TEMPORARY - DELETE AFTER USE
-@GetMapping("/reset-test-password")
-public ResponseEntity<?> resetTestPassword() {
-    try {
-        Chercheur chercheur = chercheurRepository.findByEmail("test@example.com")
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        chercheur.setHashMdp(passwordEncoder.encode("admin123"));
-        chercheurRepository.save(chercheur);
-        return ResponseEntity.ok(Map.of("message", "Password reset to admin123 successfully!"));
-    } catch (Exception e) {
-        return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-    }
-}
+ 
 }
