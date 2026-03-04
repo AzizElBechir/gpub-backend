@@ -159,7 +159,7 @@ public class AuthController {
 @GetMapping("/reset-test-password")
 public ResponseEntity<?> resetTestPassword() {
     try {
-        Chercheur chercheur = chercheurRepository.findByEmail("test@gmail.com")
+        Chercheur chercheur = chercheurRepository.findByEmail("test@example.com")
             .orElseThrow(() -> new RuntimeException("User not found"));
         chercheur.setHashMdp(passwordEncoder.encode("admin123"));
         chercheurRepository.save(chercheur);
