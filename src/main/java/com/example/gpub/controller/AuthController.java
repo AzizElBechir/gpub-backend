@@ -155,24 +155,5 @@ public class AuthController {
         }
     }
 
-    // ⚠️ TEMPORARY - DELETE AFTER USE
-    @GetMapping("/setup-admin")
-    public ResponseEntity<?> setupAdmin() {
-        try {
-            if (chercheurRepository.findByEmail("superadmin@ministere.mr").isPresent()) {
-                return ResponseEntity.ok(Map.of("message", "Super Admin already exists!"));
-            }
-            Chercheur admin = new Chercheur();
-            admin.setNom("Super Admin");
-            admin.setEmail("superadmin@ministere.mr");
-            admin.setHashMdp(passwordEncoder.encode("admin123"));
-            admin.setRole("SUPER_ADMIN");
-            admin.setActif(true);
-            admin.setDateCreation(LocalDateTime.now());
-            chercheurRepository.save(admin);
-            return ResponseEntity.ok(Map.of("message", "Super Admin created successfully!"));
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
+    
 }
