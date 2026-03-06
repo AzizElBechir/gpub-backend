@@ -67,7 +67,7 @@ public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Map<String, 
     }
     UniteRecherche u = optional.get();
     if (body.containsKey("nom")) u.setNom((String) body.get("nom"));
-    if (body.containsKey("faculteId")) {
+    if (body.get("faculteId") != null) {
         Long faculteId = Long.valueOf(body.get("faculteId").toString());
         faculteRepository.findById(faculteId).ifPresent(u::setFaculte);
     }

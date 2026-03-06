@@ -143,9 +143,15 @@ springdoc.swagger-ui.try-it-out-enabled=true
 ```
 
 **4. Run the application:**
-```bash
-mvn spring-boot:run
-```
+
+- **Première fois (création automatique des tables)** : utilisez le profil `dev` pour que Hibernate crée le schéma :
+  ```bash
+  mvn spring-boot:run -Dspring-boot.run.profiles=dev
+  ```
+- **Ensuite (schéma déjà créé)** :
+  ```bash
+  mvn spring-boot:run
+  ```
 
 The API will be available at `http://localhost:8080`
 
@@ -204,6 +210,7 @@ To test protected endpoints in Swagger:
 | PUT | `/api/publications/{id}` | Protected | Update publication (owner only) |
 | DELETE | `/api/publications/{id}` | Protected | Delete publication (owner only) |
 | GET | `/api/publications/export` | Public | Export publications (csv/bibtex/xlsx) |
+| GET | `/api/me/publications` | Protected | List my publications (paginated, optional ?statut=) |
 
 ### Co-Authors
 | Method | Endpoint | Auth | Description |
@@ -324,6 +331,7 @@ src/main/java/com/example/gpub/
 │   ├── NotificationController.java
 │   ├── ExportController.java
 │   ├── StatController.java
+│   ├── MeController.java
 │   ├── FileUploadController.java
 │   ├── UniversiteController.java
 │   ├── FaculteController.java

@@ -73,12 +73,12 @@ public interface PublicationRepository extends JpaRepository<Publication, Long> 
        );
        
        // Only return published publications for public search
-       @Query("SELECT p FROM Publication p WHERE " +
-              "p.statut = 'PUBLIE' AND (" +
-              "(:query IS NULL OR p.titre LIKE %:query% OR p.resume LIKE %:query% OR p.motsCles LIKE %:query% OR p.domaine LIKE %:query%) AND " +
-              "(:domaine IS NULL OR p.domaine = :domaine) AND " +
-              "(:auteur IS NULL OR p.auteurPrincipal.nom LIKE %:auteur%) AND " +
-              "(:annee IS NULL OR YEAR(p.datePublication) = :annee))")
+       @Query("SELECT p FROM Publication p LEFT JOIN p.auteurPrincipal a WHERE " +
+              "p.statut = 'PUBLIE' AND " +
+              "(:query IS NULL OR :query = '' OR LOWER(p.titre) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.resume) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.motsCles) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.domaine) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+              "(:domaine IS NULL OR :domaine = '' OR LOWER(p.domaine) LIKE LOWER(CONCAT('%', :domaine, '%'))) AND " +
+              "(:auteur IS NULL OR :auteur = '' OR LOWER(a.nom) LIKE LOWER(CONCAT('%', :auteur, '%'))) AND " +
+              "(:annee IS NULL OR YEAR(p.datePublication) = :annee)")
        Page<Publication> advancedSearchPublished(
        @Param("query") String query,
        @Param("domaine") String domaine,
@@ -93,4 +93,8 @@ public interface PublicationRepository extends JpaRepository<Publication, Long> 
     // Get recent publications
     Page<Publication> findAllByOrderByCreatedAtDesc(Pageable pageable);
     List<Publication> findByAuteurPrincipal_UniteRecherche_Faculte_Universite_Id(Long universiteId);
+
+    // My publications (for authenticated user)
+    Page<Publication> findByAuteurPrincipalIdOrderByCreatedAtDesc(Long auteurPrincipalId, Pageable pageable);
+    Page<Publication> findByAuteurPrincipalIdAndStatutOrderByCreatedAtDesc(Long auteurPrincipalId, String statut, Pageable pageable);
 }

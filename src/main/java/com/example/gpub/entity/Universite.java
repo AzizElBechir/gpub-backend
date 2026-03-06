@@ -14,6 +14,12 @@ public class Universite {
     @Column(name = "nom", length = 100)
     private String nom;
     
+    @Column(name = "ville", length = 80)
+    private String ville;
+    
+    @Column(name = "email", length = 120)
+    private String email;
+    
     @OneToMany(mappedBy = "universite")
     private List<Faculte> facultes;
     
@@ -35,6 +41,22 @@ public class Universite {
     
     public void setNom(String nom) {
         this.nom = nom;
+    }
+    
+    public String getVille() {
+        return ville;
+    }
+    
+    public void setVille(String ville) {
+        this.ville = ville;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
     }
     
     public List<Faculte> getFacultes() {

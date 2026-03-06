@@ -25,14 +25,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
  @Override
 protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
-
-            System.out.println("=== FILTER HIT: " + request.getMethod() + " " + request.getRequestURI() + " ===");
-            
     String path = request.getRequestURI();
     String method = request.getMethod();
 
     // Skip token processing for public GET endpoints
     boolean isPublicGet = method.equals("GET") && (
+        path.equals("/api/health") ||
         path.startsWith("/api/facultes") ||
         path.startsWith("/api/universites") ||
         path.startsWith("/api/unites") ||
@@ -65,7 +63,7 @@ protected void doFilterInternal(HttpServletRequest request, HttpServletResponse 
         try {
             email = jwtUtil.extractUsername(token);
         } catch (Exception e) {
-            System.out.println("Invalid JWT token: " + e.getMessage());
+            // Token invalide ou expiré
         }
     }
 

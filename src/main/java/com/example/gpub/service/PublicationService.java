@@ -64,6 +64,15 @@ public class PublicationService {
                 .collect(Collectors.toList());
     }
 
+    public Page<PublicationDTO> getMyPublications(Long userId, int page, int size, String statut) {
+        Sort sort = Sort.by("createdAt").descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Publication> publications = (statut != null && !statut.isEmpty())
+            ? publicationRepository.findByAuteurPrincipalIdAndStatutOrderByCreatedAtDesc(userId, statut, pageable)
+            : publicationRepository.findByAuteurPrincipalIdOrderByCreatedAtDesc(userId, pageable);
+        return publications.map(this::convertToDTO);
+    }
+
     public PublicationDTO getPublicationById(Long id) {
         Publication publication = publicationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Publication not found with id: " + id));

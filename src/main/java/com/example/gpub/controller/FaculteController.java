@@ -70,7 +70,7 @@ public class FaculteController {
         }
         Faculte f = optional.get();
         if (body.containsKey("nom")) f.setNom((String) body.get("nom"));
-        if (body.containsKey("universiteId")) {
+        if (body.get("universiteId") != null) {
             Long universiteId = Long.valueOf(body.get("universiteId").toString());
             universiteRepository.findById(universiteId).ifPresent(f::setUniversite);
         }

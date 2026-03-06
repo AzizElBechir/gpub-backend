@@ -25,8 +25,12 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .csrf(csrf -> csrf.disable())
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
+            // CORS preflight (must be first so browser can reach API)
+            .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
             // Auth endpoints (public)
             .requestMatchers("/api/auth/**").permitAll()
+            // Health check (backend + DB)
+            .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
             
             .requestMatchers(HttpMethod.GET, "/api/facultes/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/universites/**").permitAll()
@@ -72,6 +76,16 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             .requestMatchers("/api/files/upload").authenticated()
             .requestMatchers("/api/files/delete").authenticated()
             
+            // Universités, Facultés, Unités: CRUD (super-admin ou admin)
+            .requestMatchers(HttpMethod.POST, "/api/universites").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/universites/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/universites/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/facultes").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/facultes/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/facultes/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.POST, "/api/unites").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/unites/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/unites/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_ADMIN")
             
             // Protected POST/PUT/DELETE endpoints (require authentication)
             .requestMatchers(HttpMethod.POST, "/api/**").authenticated()

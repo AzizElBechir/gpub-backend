@@ -15,7 +15,8 @@ public class PublicationDTO {
     private Long auteurPrincipalId;
     private String auteurPrincipalNom;
     private List<ChercheurDTO> coauteurs;
-    
+    private String statut;
+
     // Constructors
     public PublicationDTO() {}
     
@@ -108,10 +109,11 @@ public class PublicationDTO {
         this.coauteurs = coauteurs;
     }
 
-    private String statut;
+    public String getStatut() {
+        return statut;
+    }
 
-    // Getter and Setter
-    public String getStatut() { return statut; }
-    public void setStatut(String statut) { this.statut = statut; }
-
+    public void setStatut(String statut) {
+        this.statut = statut;
+    }
 }

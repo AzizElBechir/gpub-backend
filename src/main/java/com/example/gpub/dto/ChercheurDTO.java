@@ -1,10 +1,15 @@
 package com.example.gpub.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ChercheurDTO {
     private Long id;
     private String nom;
     private String email;
-    private String password;  // ADDED THIS FIELD
+    @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY)
+    @JsonAlias("motDePasse")
+    private String password;
     private String photoUrl;
     private String bio;
     private String domaine;

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "Universites", description = "Universities management")
@@ -36,13 +37,27 @@ public class UniversiteController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Universite universite) {
+    public ResponseEntity<?> create(@RequestBody Map<String, String> body) {
         try {
+            String nom = body != null ? (body.get("nom") != null ? body.get("nom").trim() : null) : null;
+            if (nom == null || nom.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Le nom de l'université est obligatoire."));
+            }
+            Universite universite = new Universite();
+            universite.setNom(nom);
+            if (body != null) {
+                if (body.get("ville") != null) universite.setVille(body.get("ville").trim().isEmpty() ? null : body.get("ville").trim());
+                if (body.get("email") != null) universite.setEmail(body.get("email").trim().isEmpty() ? null : body.get("email").trim());
+            }
             Universite saved = universiteRepository.save(universite);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Une université avec ce nom existe déjà."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", e.getMessage()));
+                .body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Erreur lors de la création."));
         }
     }
 
@@ -54,7 +69,9 @@ public class UniversiteController {
                 .body(Map.of("error", "Universite not found"));
         }
         Universite u = optional.get();
-        u.setNom(updated.getNom());
+        if (updated.getNom() != null) u.setNom(updated.getNom());
+        if (updated.getVille() != null) u.setVille(updated.getVille().trim().isEmpty() ? null : updated.getVille().trim());
+        if (updated.getEmail() != null) u.setEmail(updated.getEmail().trim().isEmpty() ? null : updated.getEmail().trim());
         return ResponseEntity.ok(universiteRepository.save(u));
     }
 

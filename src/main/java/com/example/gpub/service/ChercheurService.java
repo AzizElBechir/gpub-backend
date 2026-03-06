@@ -46,6 +46,13 @@ public class ChercheurService {
         if (chercheurRepository.existsByEmail(chercheurDTO.getEmail())) {
             throw new RuntimeException("Email already registered");
         }
+        String rawPassword = chercheurDTO.getPassword();
+        if (rawPassword == null || rawPassword.trim().isEmpty()) {
+            throw new RuntimeException("Le mot de passe est obligatoire.");
+        }
+        if (rawPassword.length() < 8) {
+            throw new RuntimeException("Le mot de passe doit contenir au moins 8 caractères.");
+        }
         
         Chercheur chercheur = new Chercheur();
         chercheur.setNom(chercheurDTO.getNom());
@@ -56,10 +63,7 @@ public class ChercheurService {
         chercheur.setDateCreation(LocalDateTime.now());
         chercheur.setRole("USER");
         chercheur.setActif(true);
-
-        // Hash the password
-        String password = chercheurDTO.getPassword() != null ? chercheurDTO.getPassword() : "default_password";
-        chercheur.setHashMdp(passwordEncoder.encode(password));
+        chercheur.setHashMdp(passwordEncoder.encode(rawPassword.trim()));
         
         
 
