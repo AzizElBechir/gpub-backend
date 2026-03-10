@@ -255,10 +255,15 @@ public class AdminController {
             String userRole = (String) request.getAttribute("userRole");
             Long userId = (Long) request.getAttribute("userId");
 
+            if (userRole == null || userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Token manquant ou invalide. Reconnectez-vous."));
+            }
+
             Publication publication = publicationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Publication not found"));
 
-            if (userRole.equals("ADMIN")) {
+            if ("ADMIN".equals(userRole)) {
                 Chercheur admin = chercheurRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("Admin not found"));
 
@@ -383,6 +388,9 @@ public class AdminController {
             }
 
             // Build response
+            long totalChercheurs = chercheurRepository.count();
+            long totalUniversites = universiteRepository.count();
+
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("scope", scope);
             result.put("totalPublications", totalPublications);
@@ -391,6 +399,8 @@ public class AdminController {
             result.put("totalRetire", totalRetire);
             result.put("totalVues", totalVues);
             result.put("totalTelechargements", totalTelechargements);
+            result.put("totalChercheurs", totalChercheurs);
+            result.put("totalUniversites", totalUniversites);
             result.put("byDomaine", byDomaine);
             if (userRole.equals("SUPER_ADMIN")) {
                 result.put("byUniversite", byUniversite);

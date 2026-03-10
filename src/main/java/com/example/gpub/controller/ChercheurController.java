@@ -23,9 +23,14 @@ public class ChercheurController {
     @Autowired
     private ChercheurService chercheurService;
     
+    /** GET /api/chercheurs — liste tous les chercheurs. Paramètre optionnel : search (ou nom, query) pour filtrer par nom/email. */
     @GetMapping
-    public ResponseEntity<List<ChercheurDTO>> getAllChercheurs() {
-        List<ChercheurDTO> chercheurs = chercheurService.getAllChercheurs();
+    public ResponseEntity<List<ChercheurDTO>> getChercheurs(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String nom,
+            @RequestParam(required = false) String query) {
+        String term = search != null ? search : (nom != null ? nom : query);
+        List<ChercheurDTO> chercheurs = chercheurService.searchChercheurs(term);
         return ResponseEntity.ok(chercheurs);
     }
     

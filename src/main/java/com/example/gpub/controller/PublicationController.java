@@ -32,7 +32,8 @@ public class PublicationController {
     @Autowired
     private StatService statService;
     
-    // Public endpoint - Search and filter publications
+    // Public endpoint - Search and filter publications (permitAll in SecurityConfig)
+    // sortBy: champ d'entité valide, ex. "createdAt" (défaut), "titre", "datePublication"
     @GetMapping
     public ResponseEntity<Page<PublicationDTO>> searchPublications(
             @RequestParam(required = false) String query,
@@ -69,8 +70,16 @@ public class PublicationController {
     
 
     @PostMapping
-    public ResponseEntity<?> createPublication(@RequestBody PublicationDTO publicationDTO) {
+    public ResponseEntity<?> createPublication(@RequestBody PublicationDTO publicationDTO, HttpServletRequest request) {
         try {
+            Long userId = (Long) request.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Authentification requise pour créer une publication."));
+            }
+            if (publicationDTO.getAuteurPrincipalId() == null) {
+                publicationDTO.setAuteurPrincipalId(userId);
+            }
             PublicationDTO created = publicationService.createPublication(publicationDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (Exception e) {

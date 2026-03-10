@@ -56,9 +56,15 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Extract user ID from token
+    // Extract user ID from token (JWT may store numbers as Integer)
     public Long extractUserId(String token) {
-        return extractClaim(token, claims -> claims.get("userId", Long.class));
+        return extractClaim(token, claims -> {
+            Object val = claims.get("userId");
+            if (val == null) return null;
+            if (val instanceof Long) return (Long) val;
+            if (val instanceof Number) return ((Number) val).longValue();
+            return null;
+        });
     }
 
     // Extract role from token

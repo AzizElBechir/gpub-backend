@@ -34,6 +34,19 @@ public class ChercheurService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
+
+    /** Recherche par nom ou email (paramètre optionnel : search, nom ou query) */
+    public List<ChercheurDTO> searchChercheurs(String search) {
+        if (search == null || search.trim().isEmpty()) {
+            return getAllChercheurs();
+        }
+        String term = search.trim();
+        return chercheurRepository
+                .findByNomContainingIgnoreCaseOrEmailContainingIgnoreCase(term, term)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
     
     public ChercheurDTO getChercheurById(Long id) {
         Chercheur chercheur = chercheurRepository.findById(id)
