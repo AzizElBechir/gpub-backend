@@ -49,9 +49,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             .requestMatchers("/api/stats/publication/**").permitAll()
             .requestMatchers("/api/stats/chercheur/**").permitAll()
             .requestMatchers("/api/stats/me").authenticated()
-            
+            .requestMatchers(HttpMethod.GET, "/api/stats/global").permitAll()
             .requestMatchers("/api/stats/me/**").authenticated()
-
+            .requestMatchers(HttpMethod.GET, "/api/stats/global").permitAll()
 
             
             .requestMatchers("/api/me/**").authenticated()

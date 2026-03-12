@@ -152,6 +152,25 @@ public class StatService {
         return result;
     }
 
+    public Map<String, Object> getGlobalStats() {
+        List<Publication> allPublications = publicationRepository.findAll();
+        List<StatPublicationJour> allStats = statRepository.findAll();
+    
+        long totalPublications = allPublications.stream()
+            .filter(p -> "PUBLIE".equals(p.getStatut()))
+            .count();
+    
+        int totalVues = allStats.stream().mapToInt(StatPublicationJour::getVues).sum();
+        int totalTelechargements = allStats.stream().mapToInt(StatPublicationJour::getTelechargements).sum();
+    
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalPublications", totalPublications);
+        result.put("totalVues", totalVues);
+        result.put("totalTelechargements", totalTelechargements);
+    
+        return result;
+    }
+
     // ✅ New: Detailed stats with date range
     public Map<String, Object> getChercheurDetailedStats(
             Long chercheurId,

@@ -1,6 +1,8 @@
 package com.example.gpub.controller;
 
 import com.example.gpub.service.StatService;
+import com.example.gpub.repository.ChercheurRepository;
+import com.example.gpub.repository.UniversiteRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "Statistics", description = "Views and downloads tracking")
@@ -18,6 +21,31 @@ public class StatController {
 
     @Autowired
     private StatService statService;
+
+    @Autowired
+    private ChercheurRepository chercheurRepository;
+
+    @Autowired
+    private UniversiteRepository universiteRepository;
+
+    // ✅ PUBLIC - Global stats for home page
+    @GetMapping("/global")
+    public ResponseEntity<Map<String, Object>> getGlobalStats() {
+        Map<String, Object> stats = statService.getGlobalStats();
+
+        // Add counts from repositories
+        long totalChercheurs = chercheurRepository.count();
+        long totalUniversites = universiteRepository.count();
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalChercheurs", totalChercheurs);
+        result.put("totalPublications", stats.get("totalPublications"));
+        result.put("totalUniversites", totalUniversites);
+        result.put("totalVues", stats.get("totalVues"));
+        result.put("totalTelechargements", stats.get("totalTelechargements"));
+
+        return ResponseEntity.ok(result);
+    }
 
     // Public - Get stats for a specific publication
     @GetMapping("/publication/{id}")

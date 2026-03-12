@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -335,7 +337,6 @@ public class AdminController {
                 scope = admin.getAdminUniversite().getNom();
             }
 
-            // Totals
             int totalPublications = publications.size();
             int totalPublie = (int) publications.stream()
                 .filter(p -> "PUBLIE".equals(p.getStatut())).count();
@@ -344,7 +345,6 @@ public class AdminController {
             int totalRetire = (int) publications.stream()
                 .filter(p -> "RETIRE".equals(p.getStatut())).count();
 
-            // Views and downloads
             int totalVues = 0;
             int totalTelechargements = 0;
             for (Publication pub : publications) {
@@ -353,7 +353,6 @@ public class AdminController {
                 totalTelechargements += stats.stream().mapToInt(StatPublicationJour::getTelechargements).sum();
             }
 
-            // By domain
             Map<String, Integer> byDomaine = new LinkedHashMap<>();
             for (Publication pub : publications) {
                 if (pub.getDomaine() != null) {
@@ -361,7 +360,6 @@ public class AdminController {
                 }
             }
 
-            // By university (SUPER_ADMIN only)
             List<Map<String, Object>> byUniversite = new ArrayList<>();
             if (userRole.equals("SUPER_ADMIN")) {
                 List<Universite> universites = universiteRepository.findAll();
@@ -387,7 +385,6 @@ public class AdminController {
                 }
             }
 
-            // Build response
             long totalChercheurs = chercheurRepository.count();
             long totalUniversites = universiteRepository.count();
 
@@ -411,6 +408,170 @@ public class AdminController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ===== AUDIT LOGS =====
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<?> getAuditLogs(
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String utilisateur,
+            @RequestParam(required = false) String dateDebut,
+            @RequestParam(required = false) String dateFin,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpServletRequest request) {
+        try {
+            String userRole = (String) request.getAttribute("userRole");
+            Long userId = (Long) request.getAttribute("userId");
+
+            if (!userRole.equals("SUPER_ADMIN") && !userRole.equals("ADMIN")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Access denied"));
+            }
+
+            List<Map<String, Object>> logs = new ArrayList<>();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+            // Generate logs from publications changes
+            List<Publication> publications;
+            if (userRole.equals("SUPER_ADMIN")) {
+                publications = publicationRepository.findAll();
+            } else {
+                Chercheur admin = chercheurRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("Admin not found"));
+                publications = admin.getAdminUniversite() != null
+                    ? publicationRepository.findByAuteurPrincipal_UniteRecherche_Faculte_Universite_Id(
+                        admin.getAdminUniversite().getId())
+                    : new ArrayList<>();
+            }
+
+            for (Publication pub : publications) {
+                // Log creation
+                Map<String, Object> logCreate = new LinkedHashMap<>();
+                logCreate.put("id", "pub-create-" + pub.getId());
+                logCreate.put("action", "PUBLICATION_CREATED");
+                logCreate.put("actionLabel", "Publication créée");
+                logCreate.put("target", pub.getTitre());
+                logCreate.put("targetId", pub.getId());
+                logCreate.put("targetType", "PUBLICATION");
+                logCreate.put("utilisateur", pub.getAuteurPrincipal() != null
+                    ? pub.getAuteurPrincipal().getNom() : "Inconnu");
+                logCreate.put("utilisateurId", pub.getAuteurPrincipal() != null
+                    ? pub.getAuteurPrincipal().getId() : null);
+                logCreate.put("universite", getUniversiteNom(pub));
+                logCreate.put("statut", pub.getStatut());
+                logCreate.put("time", pub.getCreatedAt() != null
+                    ? pub.getCreatedAt().format(formatter) : "N/A");
+                logCreate.put("timestamp", pub.getCreatedAt() != null
+                    ? pub.getCreatedAt().toString() : null);
+                logs.add(logCreate);
+
+                // Log moderation if published or retired
+                if ("PUBLIE".equals(pub.getStatut()) || "RETIRE".equals(pub.getStatut())) {
+                    Map<String, Object> logMod = new LinkedHashMap<>();
+                    logMod.put("id", "pub-mod-" + pub.getId());
+                    logMod.put("action", "PUBLIE".equals(pub.getStatut())
+                        ? "PUBLICATION_APPROVED" : "PUBLICATION_RETIRED");
+                    logMod.put("actionLabel", "PUBLIE".equals(pub.getStatut())
+                        ? "Publication approuvée" : "Publication retirée");
+                    logMod.put("target", pub.getTitre());
+                    logMod.put("targetId", pub.getId());
+                    logMod.put("targetType", "PUBLICATION");
+                    logMod.put("utilisateur", "Admin");
+                    logMod.put("utilisateurId", null);
+                    logMod.put("universite", getUniversiteNom(pub));
+                    logMod.put("statut", pub.getStatut());
+                    logMod.put("time", pub.getUpdatedAt() != null
+                        ? pub.getUpdatedAt().format(formatter) : "N/A");
+                    logMod.put("timestamp", pub.getUpdatedAt() != null
+                        ? pub.getUpdatedAt().toString() : null);
+                    logs.add(logMod);
+                }
+            }
+
+            // Add chercheur registration logs
+            if (userRole.equals("SUPER_ADMIN")) {
+                List<Chercheur> chercheurs = chercheurRepository.findAll();
+                for (Chercheur c : chercheurs) {
+                    Map<String, Object> logReg = new LinkedHashMap<>();
+                    logReg.put("id", "user-reg-" + c.getId());
+                    logReg.put("action", "USER_REGISTERED");
+                    logReg.put("actionLabel", "Chercheur inscrit");
+                    logReg.put("target", c.getNom() + " (" + c.getEmail() + ")");
+                    logReg.put("targetId", c.getId());
+                    logReg.put("targetType", "CHERCHEUR");
+                    logReg.put("utilisateur", c.getNom());
+                    logReg.put("utilisateurId", c.getId());
+                    logReg.put("universite", c.getUniteRecherche() != null &&
+                        c.getUniteRecherche().getFaculte() != null &&
+                        c.getUniteRecherche().getFaculte().getUniversite() != null
+                        ? c.getUniteRecherche().getFaculte().getUniversite().getNom() : "N/A");
+                    logReg.put("statut", c.getActif() ? "ACTIF" : "INACTIF");
+                    logReg.put("time", c.getDateCreation() != null
+                        ? c.getDateCreation().format(formatter) : "N/A");
+                    logReg.put("timestamp", c.getDateCreation() != null
+                        ? c.getDateCreation().toString() : null);
+                    logs.add(logReg);
+                }
+            }
+
+            // Filter by action
+            if (action != null && !action.isEmpty()) {
+                logs = logs.stream()
+                    .filter(l -> action.equalsIgnoreCase((String) l.get("action")))
+                    .collect(Collectors.toList());
+            }
+
+            // Filter by user
+            if (utilisateur != null && !utilisateur.isEmpty()) {
+                String searchUser = utilisateur.toLowerCase();
+                logs = logs.stream()
+                    .filter(l -> l.get("utilisateur") != null &&
+                        ((String) l.get("utilisateur")).toLowerCase().contains(searchUser))
+                    .collect(Collectors.toList());
+            }
+
+            // Sort by timestamp descending (most recent first)
+            logs.sort((a, b) -> {
+                String ta = (String) a.get("timestamp");
+                String tb = (String) b.get("timestamp");
+                if (ta == null && tb == null) return 0;
+                if (ta == null) return 1;
+                if (tb == null) return -1;
+                return tb.compareTo(ta);
+            });
+
+            // Pagination
+            int total = logs.size();
+            int fromIndex = page * size;
+            int toIndex = Math.min(fromIndex + size, total);
+            List<Map<String, Object>> pagedLogs = fromIndex < total
+                ? logs.subList(fromIndex, toIndex)
+                : new ArrayList<>();
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("logs", pagedLogs);
+            response.put("totalElements", total);
+            response.put("totalPages", (int) Math.ceil((double) total / size));
+            response.put("currentPage", page);
+            response.put("size", size);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    private String getUniversiteNom(Publication pub) {
+        try {
+            return pub.getAuteurPrincipal().getUniteRecherche()
+                .getFaculte().getUniversite().getNom();
+        } catch (Exception e) {
+            return "N/A";
         }
     }
 }
